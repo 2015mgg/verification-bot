@@ -1,0 +1,27 @@
+services:
+  - type: web
+    name: verification-bot
+    runtime: node
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /health
+    envVars:
+      - key: CLIENT_ID
+        value: 1535799701599813703
+      - key: GUILD_ID
+        value: 1527436686206701638
+      - key: VERIFIED_ROLE_ID
+        value: 1527436686206701641
+      - key: LOG_CHANNEL_ID
+        value: 1535798632484184194
+      - key: REDIRECT_URI
+        value: https://verification-bot.onrender.com/callback
+      - key: ALLOWED_DOMAINS
+        value: ""
+      - key: BOT_TOKEN
+        sync: false
+      - key: CLIENT_SECRET
+        sync: false
+      - key: STATE_SECRET
+        sync: false
