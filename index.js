@@ -207,8 +207,47 @@ client.on(Events.GuildMemberAdd, async (member) => {
 
 client.on(Events.InteractionCreate, async (interaction) => {
   if (!interaction.isChatInputCommand()) return;
-  if (interaction.commandName !== 'verificar') return;
-  await interaction.reply({ ...buildVerifyComponents(interaction.user.id), ephemeral: true });
+
+  if (interaction.commandName === 'verificar') {
+    await interaction.reply({ ...buildVerifyComponents(interaction.user.id), ephemeral: true });
+    return;
+  }
+
+  if (interaction.commandName === 'solo-ver') {
+    if (!interaction.memberPermissions.has('ManageChannels')) {
+      return interaction.reply({
+        content: 'Necesitas el permiso de Gestionar canales para usar esto.',
+        ephemeral: true,
+      });
+    }
+    if (!UNVERIFIED_ROLE_ID) {
+      return interaction.reply({
+        content: 'No hay rol "Sin verificar" configurado.',
+        ephemeral: true,
+      });
+    }
+    await interaction.deferReply({ ephemeral: true });
+    let count = 0;
+    for (const channel of interaction.guild.channels.cache.values()) {
+      if (!channel.isTextBased() || channel.isThread()) continue;
+      try {
+        await channel.permissionOverwrites.edit(UNVERIFIED_ROLE_ID, {
+          SendMessages: false,
+          AddReactions: false,
+          SendMessagesInThreads: false,
+          CreatePublicThreads: false,
+          CreatePrivateThreads: false,
+          SendTTSMessages: false,
+        });
+        count++;
+      } catch (err) {
+        console.error(`No se pudo bloquear el canal ${channel.name}:`, err.message);
+      }
+    }
+    await interaction.editReply({
+      content: `Bloqueados ${count} canales para el rol "Sin verificar": solo lectura.`,
+    });
+  }
 });
 
 client.login(BOT_TOKEN);

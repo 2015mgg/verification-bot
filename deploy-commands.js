@@ -6,6 +6,10 @@ const commands = [
     .setName('verificar')
     .setDescription('Inicia la verificacion de tu cuenta')
     .setDefaultMemberPermissions(0),
+  new SlashCommandBuilder()
+    .setName('solo-ver')
+    .setDescription('Bloquea la escritura en todos los canales para el rol Sin verificar')
+    .setDefaultMemberPermissions(16),
 ];
 
 const rest = new REST({ version: '10' }).setToken(process.env.BOT_TOKEN);
