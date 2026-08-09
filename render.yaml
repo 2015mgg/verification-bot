@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: verification-bot
+    name: discord-verify-2015mgg
     runtime: node
     plan: free
     buildCommand: npm install
@@ -16,7 +16,7 @@ services:
       - key: LOG_CHANNEL_ID
         value: 1535798632484184194
       - key: REDIRECT_URI
-        value: https://verification-bot.onrender.com/callback
+        value: https://discord-verify-2015mgg.onrender.com/callback
       - key: ALLOWED_DOMAINS
         value: ""
       - key: BOT_TOKEN
