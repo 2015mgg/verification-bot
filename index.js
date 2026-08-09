@@ -20,6 +20,8 @@ const {
   GUILD_ID,
   VERIFIED_ROLE_ID,
   LOG_CHANNEL_ID,
+  WELCOME_CHANNEL_ID,
+  UNVERIFIED_ROLE_ID,
   REDIRECT_URI,
   PORT = 3000,
   STATE_SECRET,
@@ -125,6 +127,9 @@ app.get('/callback', async (req, res) => {
 
     const member = await guild.members.fetch(userId);
     await member.roles.add(VERIFIED_ROLE_ID);
+    if (UNVERIFIED_ROLE_ID && member.roles.cache.has(UNVERIFIED_ROLE_ID)) {
+      await member.roles.remove(UNVERIFIED_ROLE_ID);
+    }
 
     const logChannel = guild.channels.cache.get(LOG_CHANNEL_ID);
     if (logChannel) {
@@ -152,15 +157,8 @@ app.listen(PORT, () => {
   console.log(`Servidor de callback escuchando en el puerto ${PORT}`);
 });
 
-client.once(Events.ClientReady, () => {
-  console.log(`Bot conectado como ${client.user.tag}`);
-});
-
-client.on(Events.InteractionCreate, async (interaction) => {
-  if (!interaction.isChatInputCommand()) return;
-  if (interaction.commandName !== 'verificar') return;
-
-  const url = buildOAuthURL(interaction.user.id);
+function buildVerifyComponents(uid) {
+  const url = buildOAuthURL(uid);
   const row = new ActionRowBuilder().addComponents(
     new ButtonBuilder()
       .setLabel('Verificar con Discord')
@@ -176,8 +174,41 @@ client.on(Events.InteractionCreate, async (interaction) => {
       'Al completar la verificacion se registra tambien tu navegador y sistema operativo.\n' +
       'No se almacena ninguna otra informacion personal (IP, direccion, etc.).'
     );
+  return { embeds: [embed], components: [row] };
+}
 
-  await interaction.reply({ embeds: [embed], components: [row], ephemeral: true });
+async function sendVerificationToMember(member) {
+  const guild = member.guild;
+  const welcomeChannel = guild.channels.cache.get(WELCOME_CHANNEL_ID);
+  const target = welcomeChannel || member;
+  await target.send(buildVerifyComponents(member.id));
+}
+
+client.once(Events.ClientReady, () => {
+  console.log(`Bot conectado como ${client.user.tag}`);
+});
+
+client.on(Events.GuildMemberAdd, async (member) => {
+  if (member.user.bot) return;
+  if (member.guild.id !== GUILD_ID) return;
+  if (UNVERIFIED_ROLE_ID) {
+    try {
+      await member.roles.add(UNVERIFIED_ROLE_ID);
+    } catch (err) {
+      console.error('No se pudo asignar el rol sin verificar:', err.message);
+    }
+  }
+  try {
+    await sendVerificationToMember(member);
+  } catch (err) {
+    console.error('No se pudo enviar la verificacion:', err.message);
+  }
+});
+
+client.on(Events.InteractionCreate, async (interaction) => {
+  if (!interaction.isChatInputCommand()) return;
+  if (interaction.commandName !== 'verificar') return;
+  await interaction.reply({ ...buildVerifyComponents(interaction.user.id), ephemeral: true });
 });
 
 client.login(BOT_TOKEN);
